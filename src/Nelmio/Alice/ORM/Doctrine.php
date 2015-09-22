@@ -33,8 +33,12 @@ class Doctrine implements ORMInterface
      */
     public function persist(array $objects)
     {
+        $persistable = $this->getPersistableClasses();
+
         foreach ($objects as $object) {
-            $this->om->persist($object);
+            if (in_array(get_class($object), $persistable)) {
+                $this->om->persist($object);
+            }
         }
 
         if ($this->flush) {
@@ -54,5 +58,21 @@ class Doctrine implements ORMInterface
         }
 
         return $entity;
+    }
+
+    private function getPersistableClasses()
+    {
+        $persistable = array();
+        $metadatas   = $this->om->getMetadataFactory()->getAllMetadata();
+
+        foreach ($metadatas as $metadata) {
+            if (isset($metadata->isEmbeddedClass) && $metadata->isEmbeddedClass) {
+                continue;
+            }
+        
+            $persistable[] = $metadata->getName();
+        }
+
+        return $persistable;
     }
 }
